@@ -1,3 +1,5 @@
+## R-related
+
 # History files
 .Rhistory
 .Rapp.history
@@ -34,3 +36,7 @@ vignettes/*.pdf
 
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
+
+## Experiments-related
+# folder with data in the main directory
+/data/
