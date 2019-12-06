@@ -38,5 +38,13 @@ vignettes/*.pdf
 rsconnect/
 
 ## Experiments-related
+
 # folder with data in the main directory
 /data/
+
+# registry, created for the batch experiments
+/registry/
+
+# profiles data
+all_lps.RData
+

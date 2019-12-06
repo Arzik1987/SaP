@@ -1,7 +1,7 @@
 
 # check whether the needed packages are installed. Install if something is missing
 
-list.of.packages <- c("utils", "magrittr", "anytime")
+list.of.packages <- c("lubridate", "anytime")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -10,31 +10,42 @@ if(length(new.packages)) install.packages(new.packages)
 # library(utils)
 # library(magrittr)
 library(anytime)
+library(lubridate)
 library(bpriv)
+
 
 
 # load the file specifying the datasets selected for the experiments. 
 # One can inspect this file to see which data was used.
 # One can also modify this to add another experiments
 dir <- getwd()
-data.info <- read.csv(paste0(dir, '/data_preparation.csv'))
+data.info <- read.csv(paste0(dir, '/data_preparation.csv'), stringsAsFactors = FALSE)
 
 
 # The function which changes discretization rate.
 # freq - required sampling rate in seconds
 # the function assumes the input is in Watts measured each second without missing measurements,
-# and outputs the measurements in kWt
+# and outputs the measurements in kWh. It also assumes that the measurements start right after midnight
+# (signifficant for a feature creation process)
 
 resample <- function(lp, freq) {
   llp <- length(lp)
+  
+  # we need features associated with datasets to compute one version of mutual information - MI_v
   features <- c(rep(1, 6.5*3600), rep(2, 3*3600), rep(3, 6*3600), rep(4, 7*3600), rep(1, 1.5*3600))
   if(llp%%length(features) > 0) stop("missing values in load profile")
   features <- rep(features, llp%/%length(features))
   
-  lp <- lp[1:(llp - (llp %% freq))]
-  features <- features[1:(llp - (llp %% freq))]
+  # if load profile is not exactly divisible to freq, something might be wrong.
+  ind <- (llp - (llp %% freq))
+  if(ind < llp) warning("the length of load profile is not exactly divisible to frequency")
+  lp <- lp[1:ind]
+  features <- features[1:ind]
   
-  lp <- lp/3600000
+  lp <- lp/3600000 # convert to kWh
+  
+  # now we aggregate the subsequent values of load to obtained the required sampling rate
+  # we also mak the feature vector sparser
   ind <- ((1:length(lp)) - 1) %/% freq
   lp <- as.numeric(tapply(lp, ind, sum))
   features <- as.numeric(tapply(features, ind, max))
@@ -45,166 +56,142 @@ resample <- function(lp, freq) {
 # the function inputs missing values
 
 input.miss <- function(d){
+  # If a very first value is missing - set it to the first not-missing value
   first <- min(which(!is.na(d)))
   d[1:(first - 1)] <- d[first]
-  for(i in 1:length(d)){
+  # for each missing measurement define it equal to the previous measurement
+  for(i in 2:length(d)){
     if(is.na(d[i])) d[i] <- d[i - 1]
   }
   d
 }
 
 
-    #### ECO ####
-
+#### importing ECO data ####
 
 # Import a single ECO profile
+# ECO.dir - the path to the directory with ECO data
+# j - rowindex in the file "data_preparation.csv, specifying the profile
 
-import.ECO.profile <- function(basepath, filepath) {
-  return (read.csv(paste0(basepath, filepath), header = FALSE, sep = ',')[, 1])
-}
-
-
-# Import multiple consecutive ECO profiles; used for low sample rate
-
-import.ECO.profiles <- function(basepath, filepaths, freq) {
+import.ECO.profile <- function(j, ECO.dir){
+  
+  flstart <- anydate(data.info$Start_date[j]) - data.info$Warm_up_days[j]
+  flend <- anydate(data.info$End_date[j])
+  files <- paste0(anydate(flstart:flend), ".csv")
+  
+  unzip(paste0(ECO.dir, "/", data.info$Pathpart[j], "_sm_csv.zip"), 
+        files = paste0(data.info$Pathpart[j], "/", files), 
+        exdir = ECO.dir, overwrite = TRUE)
+  cat(paste("load profile number", j, ":    ", files, "\n"))
+  
   lp = c()
-  for (i in filepaths) {
-    lp = c(lp, import.ECO.profile(basepath, i))
+  for (i in 1:length(files)) {
+    lp = c(lp, read.csv(paste0(ECO.dir, "/", data.info$Pathpart[j], "/", files[i]), header = FALSE, sep = ',')[, 1])
   }
-  return(resample(lp, freq))
+  return(resample(lp, data.info$Sample_rate_seconds[j]))
 }
 
 
-# Import all ECO profiles
+# Import data
 
-import.all.ECO.profiles <- function(ECO.dir, data.info, prefix, range) {
-  ECO.file.names = data.info$File.name
-  lps = list()
-  for (i in 1:length(range)) {
-    file.names = strsplit(ECO.file.names[range[i]], split = " ")[[1]]
-    unzip(paste0(ECO.dir, "/", prefix, "_sm_csv.zip"), files = paste0(prefix, "/", file.names), 
-          exdir = ECO.dir, overwrite = TRUE)
-    cat(paste0(range[i], "/24 ", file.names, "\n"))
-    if (length(file.names) == 1) {
-      lps[[i]] = import.ECO.profile(basepath = paste0(ECO.dir, "/", prefix, "/"), filepath = file.names) %>% 
-        resample(.,data.info$`Sample.rate.(s)`[range[i]])
-    } else {
-      lps[[i]] = import.ECO.profiles(basepath = paste0(ECO.dir, "/", prefix, "/"), 
-                                     filepath = file.names, freq = data.info$`Sample.rate.(s)`[range[i]])
-    }
-  }
-  return(lps)
-}
-
-
-# House 1: 4 residents
 ECO.dir <- paste0(dir, '/data/ECO')
-ECO.lps <- import.all.ECO.profiles(ECO.dir = ECO.dir, data.info = data.info, prefix = "01", range = 1:12)
+ECO.lps <- list()
+ECOinds <- (1:nrow(data.info))[grepl("ECO", data.info$Name)]
+ECO.lps <- lapply(ECOinds, import.ECO.profile, ECO.dir = ECO.dir)
+names(ECO.lps) <- data.info$Name[ECOinds]
 
-# House 2: 2 residents
-ECO.lps <- append(ECO.lps, import.all.ECO.profiles(ECO.dir = ECO.dir, data.info = data.info, 
-                                                   prefix = "02", range = 13:24))
+
+#### REDD ####
+
+# Import a single REDD profile
+# REDD.dir - the path to the directory with ECO data
+# j - rowindex in the file "data_preparation.csv, specifying the profile
+
+import.REDD.profile <- function(j, REDD.dir){
+  
+  lp <- read.table(paste0(REDD.dir, '/low_freq/', data.info$Pathpart[j], '/channel_1.dat'), header = FALSE)
+
+  d = lp[anydate(lp[, 1]) >= (anydate(data.info$Start_date[j]) - data.info$Warm_up_days[j]),]
+  d = d[anydate(d[, 1]) <= anydate(data.info$End_date[j]), ] 
+  
+  low <- as.numeric(anytime(data.info$Start_date[j]) - data.info$Warm_up_days[j]*3600*24)
+  high <- as.numeric(anytime(data.info$End_date[j])) + 3600*24 - 1
+  full <- as.data.frame(low:high)
+  
+  colnames(full) <- "dates"
+  colnames(d) <- c("dates", "vals")
+  d <- merge(full, d, all = TRUE)
+  d <- input.miss(d[, 2])
+  
+  resample(d, data.info$Sample_rate_seconds[j])
+}
 
 
-    #### REDD ####
-
+# Import data
 
 REDD.dir <- paste0(dir, '/data/REDD')
-
-# !!!! did not work with bz2...
+# IMPORTANT: first extract files from '.bz2' archive
 untar(paste0(REDD.dir, '/low_freq.tar'), exdir = REDD.dir, 
       files = c('low_freq/house_1/channel_1.dat', 'low_freq/house_2/channel_1.dat'))
-REDD.data <- read.table(paste0(REDD.dir, '/low_freq/house_1/channel_1.dat'), header = FALSE)
-REDD.data[, 3] <- anydate(REDD.data[, 1])
 
-import.REDD.profile <- function(date, name) {
-  d <- REDD.data[REDD.data[, 3] == anydate(date), 1:2]
-  low <- as.numeric(anytime(date))
-  high <- as.numeric(anytime(date)) + 3600*24 - 1
+REDD.lps <- list()
+REDDinds <- (1:nrow(data.info))[grepl("REDD", data.info$Name)]
+REDD.lps <- lapply(REDDinds, import.REDD.profile, REDD.dir = REDD.dir)
+names(REDD.lps) <- data.info$Name[REDDinds]
+
+
+#### Smart ####
+
+# Import a single Smart profile
+# Smart.dir - the path to the directory with ECO data
+# j - rowindex in the file "data_preparation.csv, specifying the profile
+
+
+import.Smart.profile <- function(j, Smart.dir) {
+  
+  flstart <- anydate(data.info$Start_date[j]) - data.info$Warm_up_days[j]
+  flend <- anydate(data.info$Start_date[j])
+  files <- anydate(flstart:flend)
+  lp <- data.frame(matrix(ncol = 2, nrow = 0))
+
+  for(i in 1:length(files)){
+    tmp <- paste0(year(files[i]), "-", substr(month.name, 1, 3)[month(files[i])], "-", day(files[i]), ".csv")
+    lp <- rbind(lp, read.csv(paste0(Smart.dir, '/homeB-power/', tmp), header = FALSE))
+  }
+  
+  low <- as.numeric(anytime(flstart))
+  high <- as.numeric(anytime(flend)) + 3600*24 - 1
   full <- as.data.frame(low:high)
   
   colnames(full) <- "dates"
-  colnames(d) <- c("dates", "vals")
-  d <- merge(full, d, all = TRUE)
-  d <- input.miss(d[, 2])
+  colnames(lp) <- c("dates", "vals")
+  lp <- merge(full, lp, all = TRUE)
+  lp <- input.miss(lp[, 2])
   
-  resample(d, data.info$`Sample.rate.(s)`[data.info$Name == name])
+  resample(lp, data.info$Sample_rate_seconds[j])
 }
 
-import.REDD.profiles <- function(start.date, end.date, name) {
-  d = REDD.data[anydate(REDD.data[, 3]) >= anydate(start.date),]
-  d = d[anydate(d[, 3]) <= anydate(end.date), 1:2] 
-  
-  low <- as.numeric(anytime(start.date))
-  high <- as.numeric(anytime(end.date)) + 3600*24 - 1
-  full <- as.data.frame(low:high)
-  
-  colnames(full) <- "dates"
-  colnames(d) <- c("dates", "vals")
-  d <- merge(full, d, all = TRUE)
-  d <- input.miss(d[, 2])
-  
-  resample(d, data.info$`Sample.rate.(s)`[data.info$Name == name])
-}
 
-REDD.lps <- mapply(import.REDD.profile,
-                   c('2011-04-19', '2011-04-23', '2011-04-24', '2011-04-20'),
-                   c('REDD1', 'REDD2', 'REDD3', 'REDD4'), SIMPLIFY = FALSE)
-
-REDD.data <- read.table(paste(REDD.dir,'/low_freq/house_2/channel_1.dat', sep = ""), header=FALSE)
-REDD.data[, 3] <- anydate(REDD.data[, 1])
-REDD.lps[[5]] <- import.REDD.profiles('2011-04-19', '2011-04-25', 'REDD5')
-
-
-
-### new
-
-# d <- REDD.data[REDD.data[, 3] == anydate('2011-04-24'), 1:2]
-# low <- as.numeric(anytime('2011-04-24'))
-# high <- as.numeric(anytime('2011-04-24')) + 3600*24 - 1
-# full <- as.data.frame(low:high)
-# 
-# colnames(full) <- "dates"
-# colnames(d) <- c("dates", "vals")
-# d <- merge(full, d, all = TRUE)
-
-### end new
-
-    #### Smart ####
-
+# Import data
 
 Smart.dir <- paste0(dir, '/data/Smart')
-untar(paste(Smart.dir, '/homeB-power.tar.gz', sep = ""), exdir = Smart.dir)
+untar(paste0(Smart.dir, '/homeB-power.tar.gz'), exdir = Smart.dir)
 
-import.Smart.profile <- function(d, name) {
-  
-  low <- as.numeric(anytime(anydate(d[1, 1])))
-  high <- as.numeric(anytime(anydate(d[1, 1]))) + 3600*24 - 1
-  full <- as.data.frame(low:high)
-  
-  colnames(full) <- "dates"
-  colnames(d) <- c("dates", "vals")
-  d <- merge(full, d, all = TRUE)
-  d <- input.miss(d[, 2])
-  
-  resample(d, data.info$`Sample.rate.(s)`[data.info$Name == name])
-}
+Smart.lps <- list()
+Smartinds <- (1:nrow(data.info))[grepl("Smart", data.info$Name)]
+Smart.lps <- lapply(Smartinds, import.Smart.profile, Smart.dir = Smart.dir)
+names(Smart.lps) <- data.info$Name[Smartinds]
 
-Smart.lps = list()
-Smart.data <- read.csv(paste0(Smart.dir, '/homeB-power/2012-Apr-15.csv'), header = FALSE)
-Smart.lps[[1]] <- import.Smart.profile(Smart.data, 'SmartB1')
-Smart.data <- read.csv(paste0(Smart.dir, '/homeB-power/2012-Apr-16.csv'), header = FALSE)
-Smart.lps[[2]] <- import.Smart.profile(Smart.data, 'SmartB2')
+#### CER ####
 
+# Import a single CER profile
+# CER.dir - the path to the directory with ECO data
+# j - rowindex in the file "data_preparation.csv, specifying the profile
 
-    #### CER ####
+import.CER.profile <- function(j, CER.dir) {
 
-
-CER.dir <- paste0(dir, '/data/CER')
-import.CER.profiles <- function(ind) {
-  filename <- data.info$File.name[ind]
-  lp = read.csv(paste0(CER.dir, "/", filename), header = FALSE)
-  if (data.info$`Location/Time`[ind] %>% grepl("Winter", .)) {
+  lp = read.csv(paste0(CER.dir, "/", data.info$Pathpart[j], ".txt"), header = FALSE)
+  if(data.info$Time[j] == "Winter"){
     lp = lp[6721:(6721 + 671), 1]
   } else {
     lp = lp[1:672, 1]
@@ -216,12 +203,21 @@ import.CER.profiles <- function(ind) {
   return(list(lpo = lp, features = features, interval = 30))
 }
 
-CER.lps <- lapply(32:37, import.CER.profiles)
 
-    #### Combine and save ####
+# Import data
 
-all.lps <- ECO.lps %>% append(., REDD.lps) %>% append(., Smart.lps) %>% append(., CER.lps)
-names(all.lps) <- data.info$Name
+CER.dir <- paste0(dir, '/data/CER')
+CERinds <- (1:nrow(data.info))[grepl("CER", data.info$Name)]
+CER.lps <- lapply(CERinds, import.CER.profile, CER.dir = CER.dir)
+names(CER.lps) <- data.info$Name[CERinds]
+
+
+#### Combine all load profiles and save ####
+
+all.lps <- c(ECO.lps, REDD.lps, Smart.lps, CER.lps)
 save(all.lps, file = paste0(dir, "/all_lps.RData"))
 
-
+for(i in 1:length(all.lps)){
+  plot(all.lps[[i]][[1]], type = "l", col = "red", main = names(all.lps)[[i]],
+       xlab = paste0("Interval = ", all.lps[[i]]$interval), ylab = "kWh")
+}
