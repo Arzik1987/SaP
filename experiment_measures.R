@@ -5,7 +5,7 @@
 library(bpriv)
 library(batchtools)
 
-setwd("C:\\Projects\\4 Storage and Privacy\\Privacy_experiments")
+setwd("C:\\Projects\\4 Storage and Privacy\\Experiments_gitHub")
 
 #### if you did something wrong and want to redo everything from scratch
 
@@ -14,11 +14,11 @@ setwd("C:\\Projects\\4 Storage and Privacy\\Privacy_experiments")
 
 #### for the first start of this code you need to make a registry, where the results will reside
 
-# reg = makeExperimentRegistry(file.dir = paste0(getwd(), "/registry"), packages = "bpriv", seed = 1)
+reg = makeExperimentRegistry(file.dir = paste0(getwd(), "/registry"), packages = "bpriv", seed = 1)
 
 #### for subsequent uses of the code, when the registry exists
 
-reg <- loadRegistry(file.dir = paste0(getwd(), "/registry"), work.dir = getwd(), writeable = TRUE)
+# reg <- loadRegistry(file.dir = paste0(getwd(), "/registry"), work.dir = getwd(), writeable = TRUE)
 
 ### if you want to remove experimental results, but keep the registry
 
@@ -30,7 +30,7 @@ reg <- loadRegistry(file.dir = paste0(getwd(), "/registry"), work.dir = getwd(),
 reg$cluster.functions = makeClusterFunctionsSocket()
 saveRegistry()
 
-#### problems
+#### BBLHs ("problems" in bacthtools terminology)
 
 load(paste0(getwd(), "/all_lps.RData"))
 
@@ -52,7 +52,7 @@ for(i in 1:length(all.lps)){
   addProblem(name = names(all.lps)[i], data = all.lps[[i]], fun = modifylp)
 }
 
-#### algorithms
+#### privacy measures ("algorithms" in batchtools terminolohy)
 
 # cluster similarity
 
@@ -225,7 +225,7 @@ addAlgorithm(name = "meas.mi.hist.diff.bin", fun = meas.mi.hist.diff.bin)
 reg$problems
 reg$algorithms
 
-#### parameters 
+#### parameters (names of BBLHs to use and storage characteristics - inputs of BBLHs)
 
 tmp1 <- CJ(ind = 1:4,
   algo.name = c("best.effort.moderate", "lazy.charging.moderate", 

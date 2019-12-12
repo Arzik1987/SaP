@@ -82,7 +82,7 @@ import.ECO.profile <- function(j, ECO.dir){
   unzip(paste0(ECO.dir, "/", data.info$Pathpart[j], "_sm_csv.zip"), 
         files = paste0(data.info$Pathpart[j], "/", files), 
         exdir = ECO.dir, overwrite = TRUE)
-  cat(paste("load profile number", j, ":    ", files, "\n"))
+  cat(paste("load profile number", j, ":    ", files[1], "-", tail(files, 1), "\n"))
   
   lp = c()
   for (i in 1:length(files)) {
@@ -117,6 +117,9 @@ import.REDD.profile <- function(j, REDD.dir){
   low <- as.numeric(anytime(data.info$Start_date[j]) - data.info$Warm_up_days[j]*3600*24)
   high <- as.numeric(anytime(data.info$End_date[j])) + 3600*24 - 1
   full <- as.data.frame(low:high)
+  
+  files <- unique(anydate(full[, 1]))
+  cat(paste("load profile number", j, ":    ", files[1], "-", tail(files, 1), "\n"))
   
   colnames(full) <- "dates"
   colnames(d) <- c("dates", "vals")
@@ -162,6 +165,9 @@ import.Smart.profile <- function(j, Smart.dir) {
   low <- as.numeric(anytime(flstart))
   high <- as.numeric(anytime(flend)) + 3600*24 - 1
   full <- as.data.frame(low:high)
+  
+  files <- unique(anydate(full[, 1]))
+  cat(paste("load profile number", j, ":    ", files[1], "-", tail(files, 1), "\n"))
   
   colnames(full) <- "dates"
   colnames(lp) <- c("dates", "vals")
