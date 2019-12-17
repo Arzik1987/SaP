@@ -27,8 +27,11 @@ data.info <- read.csv(paste0(dir, '/data_preparation.csv'), stringsAsFactors = F
 # the function assumes the input is in Watts measured each second without missing measurements,
 # and outputs the measurements in kWh. It also assumes that the measurements start right after midnight
 # (signifficant for a feature creation process)
+# warmup - number of days in the load profile, which will be used 
+# for a privacy algorithm (so that it will converge to "steady state") but will be 
+# excluded from subsequent privacy measurements
 
-resample <- function(lp, freq) {
+resample <- function(lp, freq, warmup, loc) {
   llp <- length(lp)
   
   # we need features associated with datasets to compute one version of mutual information - MI_v
@@ -49,7 +52,9 @@ resample <- function(lp, freq) {
   ind <- ((1:length(lp)) - 1) %/% freq
   lp <- as.numeric(tapply(lp, ind, sum))
   features <- as.numeric(tapply(features, ind, max))
-  return (list(lpo = lp, features = features, interval = freq/60))
+  return (list(lpo = lp, features = features, interval = freq/60, 
+               warmup = 3600*24*warmup/freq,
+               voltage = ifelse(loc == "US", 110, 220)))
 }
 
 
@@ -88,7 +93,8 @@ import.ECO.profile <- function(j, ECO.dir){
   for (i in 1:length(files)) {
     lp = c(lp, read.csv(paste0(ECO.dir, "/", data.info$Pathpart[j], "/", files[i]), header = FALSE, sep = ',')[, 1])
   }
-  return(resample(lp, data.info$Sample_rate_seconds[j]))
+  return(resample(lp, data.info$Sample_rate_seconds[j], 
+                  warmup = data.info$Warm_up_days[j], loc = data.info$Location[j]))
 }
 
 
@@ -126,7 +132,8 @@ import.REDD.profile <- function(j, REDD.dir){
   d <- merge(full, d, all = TRUE)
   d <- input.miss(d[, 2])
   
-  resample(d, data.info$Sample_rate_seconds[j])
+  resample(d, data.info$Sample_rate_seconds[j], 
+           warmup = data.info$Warm_up_days[j], loc = data.info$Location[j])
 }
 
 
@@ -174,7 +181,8 @@ import.Smart.profile <- function(j, Smart.dir) {
   lp <- merge(full, lp, all = TRUE)
   lp <- input.miss(lp[, 2])
   
-  resample(lp, data.info$Sample_rate_seconds[j])
+  resample(lp, data.info$Sample_rate_seconds[j], 
+           warmup = data.info$Warm_up_days[j], loc = data.info$Location[j])
 }
 
 
@@ -198,15 +206,17 @@ import.CER.profile <- function(j, CER.dir) {
 
   lp = read.csv(paste0(CER.dir, "/", data.info$Pathpart[j], ".txt"), header = FALSE)
   if(data.info$Time[j] == "Winter"){
-    lp = lp[6721:(6721 + 671), 1]
+    lp = lp[(6721 - 336):(6721 + 671), 1]
   } else {
-    lp = lp[1:672, 1]
+    lp = lp[1:(672 + 336), 1]
   }
   llp <- length(lp)
   features <- c(rep(1, 6.5*2), rep(2, 3*2), rep(3, 6*2), rep(4, 7*2), rep(1, 1.5*2))
   features <- rep(features, llp%/%length(features))
   
-  return(list(lpo = lp, features = features, interval = 30))
+  return(list(lpo = lp, features = features, interval = 30, 
+              warmup = 48*data.info$Warm_up_days[j]*1800/data.info$Sample_rate[j],
+              voltage = ifelse(data.info$Location[j] == "US", 110, 220)))
 }
 
 
@@ -220,10 +230,21 @@ names(CER.lps) <- data.info$Name[CERinds]
 
 #### Combine all load profiles and save ####
 
+#' lpo --- load profile
+#' features --- the parameter to be passed to one variant of the MI measure
+#' interval --- the interval between measurements in minutes
+#' warmup --- the number of the first observations to be used in by the battery algorithhm
+#' but discarded from calculating of the privacy measures.
+
 all.lps <- c(ECO.lps, REDD.lps, Smart.lps, CER.lps)
 save(all.lps, file = paste0(dir, "/all_lps.RData"))
 
+
+# plot loaded load profiles (9 per plot)
+
+par(mfrow=c(3, 3))
 for(i in 1:length(all.lps)){
-  plot(all.lps[[i]][[1]], type = "l", col = "red", main = names(all.lps)[[i]],
+  tmp <- all.lps[[i]]
+  plot(tmp$lpo[(tmp$warmup + 1):length(tmp$lpo)], type = "l", col = "red", main = names(all.lps)[[i]],
        xlab = paste0("Interval = ", all.lps[[i]]$interval), ylab = "kWh")
 }

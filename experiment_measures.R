@@ -34,18 +34,27 @@ saveRegistry()
 
 load(paste0(getwd(), "/all_lps.RData"))
 
-modifylp <- function(data, job, algo.name, max.be, min.be, max.bc, max.bd, max.bp, be, ...){
-  possible.args <- list(max.be = max.be, min.be = min.be, max.bc = max.bc, max.bd = max.bd, max.bp = max.bp, be = be)
+modifylp <- function(data, job, algo.name, max.be, max.bp, be, mode, ...){
+  possible.args <- list(max.be = max.be, max.bp = max.bp, be = be, mode = mode)
   arg.names <- names(as.list(args(algo.name)))
   args.to.use <- possible.args[names(possible.args) %in% arg.names]
 
   #### check if better load profiles exist
   data$lpo[data$lpo < 0] <- 0
   
-  d <- data[c("lpo", "interval")]
-  res <- do.call(algo.name, append(d, args.to.use))
+  if("voltage" %in% arg.names){
+    d <- data[c("lpo", "interval", "voltage")]
+  } else {
+    d <- data[c("lpo", "interval")]
+  }
+  
+    res <- do.call(algo.name, append(d, args.to.use))
+  
+  start <- data$warmup + 1
+  end <- length(data$lpo)
 
-  list(lpo = data$lpo, lpm = res, features = data$features)
+  list(lpo = data$lpo[start:end], lpm = res[start:end], 
+       features = data$features[start:end], interval = data$interval)
 }
 
 for(i in 1:length(all.lps)){
@@ -85,15 +94,12 @@ meas.er.hist.diff <- function(data, job, instance, ...) {
   res
 }
 
-meas.er.knn.diff <- function(data, job, instance, ...) {
-  res <- priv.er.knn(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
-  res
-}
-
 # feature mass
 
-meas.fm.diff <- function(data, job, instance, ...) {
-  res <- priv.fm(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
+meas.fm.diff <- function(data, job, instance, regime, ...) {
+  thr <- ifelse(regime == "rfm", 0, instance$interval*50/60000) # threshold = 50 Watt for "fm" and "ed" regimes
+  res <- priv.fm(lpo = diff(instance$lpo), lpm = diff(instance$lpm), thr = thr,
+                 regime = regime, ...) 
   res
 }
 
@@ -104,6 +110,13 @@ meas.kd.orig <- function(data, job, instance, ...) {
   -res
 }
 
+# differenced is commented out since it is only applied as conditional 9and we do not program it)
+#
+# meas.kd.diff <- function(data, job, instance, ...) {
+#   res <- priv.kd(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
+#   -res
+# }
+
 # KL divergence
 
 meas.kl.hist.orig <- function(data, job, instance, ...) {
@@ -113,16 +126,6 @@ meas.kl.hist.orig <- function(data, job, instance, ...) {
 
 meas.kl.hist.diff <- function(data, job, instance, ...) {
   res <- priv.kl.hist(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
-  -res
-}
-
-meas.kl.knn.orig <- function(data, job, instance, ...) {
-  res <- priv.kl.knn(lpo = instance$lpo, lpm = instance$lpm, ...)
-  -res
-}
-
-meas.kl.knn.diff <- function(data, job, instance, ...) {
-  res <- priv.kl.knn(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
   -res
 }
 
@@ -140,30 +143,8 @@ meas.mi.hist.orig <- function(data, job, instance, ...) {
   res
 }
 
-meas.mi.hist.orig.bin <- function(data, job, instance, ...) {
-  res <- priv.mi.hist(lpo = instance$lpo, lpm = instance$lpm, 
-                      features = instance$features, regime = "iid", num.bins = 2, ...)
-  res
-}
-
 meas.mi.hist.diff <- function(data, job, instance, ...) {
   res <- priv.mi.hist(lpo = diff(instance$lpo), lpm = diff(instance$lpm), features = instance$features, ...)
-  res
-}
-
-meas.mi.hist.diff.bin <- function(data, job, instance, ...) {
-  res <- priv.mi.hist(lpo = diff(instance$lpo), lpm = diff(instance$lpm), 
-                      features = instance$features, regime = "iid", num.bins = 2, ...)
-  res
-}
-
-meas.mi.knn.orig <- function(data, job, instance, ...) {
-  res <- priv.mi.knn(lpo = instance$lpo, lpm = instance$lpm, features = instance$features, ...)
-  res
-}
-
-meas.mi.knn.diff <- function(data, job, instance, ...) {
-  res <- priv.mi.knn(lpo = diff(instance$lpo), lpm = diff(instance$lpm), features = instance$features, ...)
   res
 }
 
@@ -194,29 +175,34 @@ meas.tvd.orig <- function(data, job, instance, ...) {
 }
 
 
+####
+
 addAlgorithm(name = "meas.cs.orig", fun = meas.cs.orig)
 addAlgorithm(name = "meas.cs.diff", fun = meas.cs.diff)
+
 addAlgorithm(name = "meas.ce.orig", fun = meas.ce.orig)
 addAlgorithm(name = "meas.ce.diff", fun = meas.ce.diff)
+
 addAlgorithm(name = "meas.er.hist.diff", fun = meas.er.hist.diff)
-addAlgorithm(name = "meas.er.knn.diff", fun = meas.er.knn.diff)
+
 addAlgorithm(name = "meas.fm.diff", fun = meas.fm.diff)
+
 addAlgorithm(name = "meas.kd.orig", fun = meas.kd.orig)
+
 addAlgorithm(name = "meas.kl.hist.orig", fun = meas.kl.hist.orig)
 addAlgorithm(name = "meas.kl.hist.diff", fun = meas.kl.hist.diff)
-addAlgorithm(name = "meas.kl.knn.orig", fun = meas.kl.knn.orig)
-addAlgorithm(name = "meas.kl.knn.diff", fun = meas.kl.knn.diff)
+
 addAlgorithm(name = "meas.lv.orig", fun = meas.lv.orig)
+
 addAlgorithm(name = "meas.mi.hist.orig", fun = meas.mi.hist.orig)
 addAlgorithm(name = "meas.mi.hist.diff", fun = meas.mi.hist.diff)
-addAlgorithm(name = "meas.mi.knn.orig", fun = meas.mi.knn.orig)
-addAlgorithm(name = "meas.mi.knn.diff", fun = meas.mi.knn.diff)
+
 addAlgorithm(name = "meas.rc.orig", fun = meas.rc.orig)
+
 addAlgorithm(name = "meas.dc.orig", fun = meas.dc.orig)
 addAlgorithm(name = "meas.dc.diff", fun = meas.dc.diff)
+
 addAlgorithm(name = "meas.tvd.orig", fun = meas.tvd.orig)
-addAlgorithm(name = "meas.mi.hist.orig.bin", fun = meas.mi.hist.orig.bin)
-addAlgorithm(name = "meas.mi.hist.diff.bin", fun = meas.mi.hist.diff.bin)
 
 
 
@@ -227,18 +213,39 @@ reg$algorithms
 
 #### parameters (names of BBLHs to use and storage characteristics - inputs of BBLHs)
 
-tmp1 <- CJ(ind = 1:4,
-  algo.name = c("best.effort.moderate", "lazy.charging.moderate", 
-                "lazy.stepping.moderate", "nill.moderate",
-                "random.charging.moderate"))
-           
+ades = list(
+  meas.cs.orig = data.table(),
+  meas.cs.diff = data.table(),
+  meas.ce.orig = data.table(),
+  meas.ce.diff = data.table(),
+  meas.er.hist.diff = data.table(regime = c("zeros", "nozeros")),
+  meas.fm.diff = data.table(regime = c("fm", "rfm", "ed")),
+  meas.kd.orig = data.table(),
+  meas.kl.hist.orig = data.table(),
+  meas.kl.hist.diff = data.table(),
+  meas.lv.orig = data.table(),
+  meas.mi.hist.orig = data.table(regime = c("iid", "ms", "mns", "bin")),
+  meas.mi.hist.diff = data.table(regime = c("iid", "ms", "bin")),
+  meas.rc.orig = data.table(regime = c("v", "w")),
+  meas.dc.orig = data.table(regime = c("reg", "lpo")),
+  meas.dc.diff = data.table(regime = c("reg")),
+  meas.tvd.orig = data.table()
+)
+
+
+tmp1 <- rbind(
+  CJ(ind = 1:4, algo.name = "alg.be", mode = c("first", "second")),
+  CJ(ind = 1:4, algo.name = "alg.nill", mode = "na"),
+  CJ(ind = 1:4, algo.name = "alg.stepping", mode = c("ls1", "ls2", "lc", "rc"))
+)
+
 tmp2 <- data.table(ind = 1:4,
-            max.be = c(1.2, 4.0, 2.4, 6.5),
-            min.be = c(0.0, 0.0, 0.0, 0.0),
-            max.bc = c(0.27, 2.0, 4.0, 5.0),
-            max.bd = c(0.27, 2.0, 4.0, 5.0),
-            max.bp = c(0.27, 2.0, 4.0, 5.0),
-            be = c(0.5, 0.5, 0.5, 0.5))
+                   max.be = c(1.2, 4.0, 2.4, 6.5),
+                   min.be = c(0.0, 0.0, 0.0, 0.0),
+                   max.bc = c(0.27, 2.0, 4.0, 5.0),
+                   max.bd = c(0.27, 2.0, 4.0, 5.0),
+                   max.bp = c(0.27, 2.0, 4.0, 5.0),
+                   be = c(0.5, 0.5, 0.5, 0.5))
 
 pars <- merge(tmp1, tmp2, by = "ind")[, -1]
 
@@ -248,31 +255,6 @@ for(i in 1:length(all.lps)){
 }
 names(pdes) <- names(all.lps)
 
-ades = list(
-  meas.cs.orig = data.table(),
-  meas.cs.diff = data.table(),
-  meas.ce.orig = data.table(),
-  meas.ce.diff = data.table(),
-  meas.er.hist.diff = data.table(regime = c("zeros", "nozeros")),
-  meas.er.knn.diff = data.table(regime = c("zeros", "nozeros")),
-  meas.fm.diff = data.table(regime = c("fm", "rfm", "ed")),
-  meas.kd.orig = data.table(),
-  meas.kl.hist.orig = data.table(),
-  meas.kl.hist.diff = data.table(),
-  meas.kl.knn.orig = data.table(),
-  meas.kl.knn.diff = data.table(),
-  meas.lv.orig = data.table(),
-  meas.mi.hist.orig = data.table(regime = c("iid", "ms", "mns")),
-  meas.mi.hist.diff = data.table(regime = c("iid", "ms")),
-  meas.mi.knn.orig = data.table(regime = c("iid", "ms")),
-  meas.mi.knn.diff = data.table(regime = c("iid", "ms")),
-  meas.rc.orig = data.table(regime = c("v", "w")),
-  meas.dc.orig = data.table(regime = c("reg", "lpo")),
-  meas.dc.diff = data.table(regime = c("reg", "lpo")),
-  meas.tvd.orig = data.table(),
-  meas.mi.hist.orig.bin = data.table(),
-  meas.mi.hist.diff.bin = data.table()
-)
 
 addExperiments(pdes, ades, repls = 1)
 

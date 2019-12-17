@@ -25,7 +25,7 @@ No,Name,Sample_rate_seconds,Length,No_residents,Location,Time,Day_of_week,Employ
 24,ECO24,1800,672,2,Europe,Winter,2 weeks,Yes,W,02,2012-12-17,2012-12-30,7,1,,2012-12-17,2012-12-30
 25,REDD1,30,2880,na,US,Spring,Weekday,NA,W,house_1,2011-04-26,2011-04-26,7,1,,2011-04-19,2011-04-19
 26,REDD2,30,2880,na,US,Spring,Weekend,NA,W,house_1,2011-05-07,2011-05-07,7,1,,2011-04-23,2011-04-23
-27,REDD3,60,1440,na,US,Spring,Weekend,NA,W,house_1,2011-05-08,2011-05-08,7,1,,2011-04-24,2011-04-24
+27,REDD3,60,1440,na,US,Spring,Weekend,NA,W,house_1,2011-05-01,2011-05-01,7,1,,2011-04-24,2011-04-24
 28,REDD4,60,1440,na,US,Spring,Weekday,NA,W,house_1,2011-04-27,2011-04-27,7,1,,2011-04-20,2011-04-20
 29,REDD5,900,672,na,US,Spring,Whole week,NA,W,house_2,2011-04-26,2011-05-02,7,1,,2011-04-19,2011-04-25
 30,SmartB1,30,2880,4,US,Spring,Weekend,Yes,W,na,2012-06-10,2012-06-10,7,1,,2012-04-15,2012-04-15
