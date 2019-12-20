@@ -48,3 +48,6 @@ rsconnect/
 # profiles data
 all_lps.RData
 
+# registry, created for the batch experiments
+/results/
+

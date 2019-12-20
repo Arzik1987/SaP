@@ -2,8 +2,8 @@
 # new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 # if(length(new.packages)) install.packages(new.packages)
 
-library(bpriv)
 library(batchtools)
+library(bpriv)
 
 setwd("C:\\Projects\\4 Storage and Privacy\\Experiments_gitHub")
 
@@ -241,9 +241,6 @@ tmp1 <- rbind(
 
 tmp2 <- data.table(ind = 1:4,
                    max.be = c(1.2, 4.0, 2.4, 6.5),
-                   min.be = c(0.0, 0.0, 0.0, 0.0),
-                   max.bc = c(0.27, 2.0, 4.0, 5.0),
-                   max.bd = c(0.27, 2.0, 4.0, 5.0),
                    max.bp = c(0.27, 2.0, 4.0, 5.0),
                    be = c(0.5, 0.5, 0.5, 0.5))
 
@@ -270,83 +267,3 @@ submitJobs()
 waitForJobs()
 
 
-#### results
-
-reduce <- function(res) res
-results = unwrap(reduceResultsDataTable(fun = reduce))
-pars = unwrap(getJobPars())
-results = ijoin(pars, results)
-
-results[max.be == 1.2, battery := "battery1"]
-results[max.be == 2.4, battery := "battery2"]
-results[max.be == 4, battery := "battery3"]
-results[max.be == 6.5, battery := "battery4"]
-
-
-save(results, file = paste0(getwd(), "/results.RData"))
-
-
-#### results processing
-
-# for different batteries different algorithms:
-results[problem == 'CER6' & algorithm == 'meas.ce.orig' & battery == 'battery1',]
-results[problem == 'CER6' & algorithm == 'meas.ce.orig' & battery == 'battery2',]
-results[problem == 'CER6' & algorithm == 'meas.ce.orig' & battery == 'battery3',]
-results[problem == 'CER6' & algorithm == 'meas.ce.orig' & battery == 'battery4',]
-
-results <- results[!grepl(".knn.", results$algorithm), ]
-results[algorithm == "cs.diff" & result.1 == -1, result.1 := 0]
-results$algorithm <- gsub(".hist", "", results$algorithm)
-results$algorithm <- gsub("meas.", "", results$algorithm)
-
-pivot <- unique(results[, c("algorithm", "regime")])
-pivot$meas.id <- paste(pivot$algorithm, pivot$regime, sep = ".")
-pivot$meas.id <- gsub(".NA", "", pivot$meas.id)
-
-
-for(i in 1: nrow(pivot)){
-  print(i)
-  for(j in unique(results$problem)){
-    for(k in unique(results$battery)){
-      if(is.na(pivot$regime[i])){
-        ids <- results[problem == j & battery == k & algorithm == pivot$algorithm[i], job.id]
-      } else {
-        ids <- results[problem == j & battery == k & algorithm == pivot$algorithm[i] & regime == pivot$regime[i], job.id]
-      }
-      if(length(ids) != 5) stop("length of the vector is not 5")
-      results[job.id %in% ids, algo.rank := rank(results[job.id %in% ids, result.1])]
-      results[job.id %in% ids, meas.id := pivot$meas.id[i]]
-    }
-  }
-}
-
-library(reshape)
-aggregate(results$algo.rank, list(results$algo.name), mean)
-
-d <- aggregate(results$algo.rank, list(results$algo.name, results$battery), mean)
-names(d) <- c("algo.name", "battery", "value")
-res <- cast(d, algo.name~battery, mean)
-res <- apply(res, 2, rank)
-write.csv(res, paste0(getwd(), "/res_bat.csv"))
-# best effort on battery1 and battery2
-
-d <- aggregate(results$algo.rank, list(results$algo.name, results$problem), mean)
-names(d) <- c("algo.name", "load.profile", "value")
-res <- cast(d, algo.name~load.profile, mean)
-res <- apply(res, 2, rank)
-write.csv(res, paste0(getwd(), "/res_lp.csv"))
-# nill in CER2 and in SmartB2
-
-d <- aggregate(results$algo.rank, list(results$algo.name, results$meas.id), mean)
-names(d) <- c("algo.name", "measure", "value")
-res <- cast(d, algo.name~measure, mean)
-res <- apply(res, 2, rank)
-write.csv(res, paste0(getwd(), "/res_meas.csv"))
-
-write.csv(results, paste0(getwd(), "/res_raw.csv"))
-
-d <- results[algo.name == "best.effort.moderate",]
-barplot(table(d$algo.rank)/sum(table(d$algo.rank)))
-
-d <- results[algo.name == "nill.moderate",]
-barplot(table(d$algo.rank)/sum(table(d$algo.rank)))
