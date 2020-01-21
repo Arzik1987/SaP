@@ -19,18 +19,6 @@ results[max.be == 2.4, battery := "Myreserve Pack"]
 results[max.be == 4, battery := "eco 8.0/4"]
 results[max.be == 6.5, battery := "RESU 6.5"]
 
-save(results, file = paste0(getwd(), "/results.RData"))
-
-#' load the result
-
-load(paste0(getwd(), "/results.RData"))
-
-#' delete unnecessary information from measure's names
-
-# results[algorithm == "cs.diff" & result.1 == -1, result.1 := 0]
-# results$algorithm <- gsub(".hist", "", results$algorithm)
-# results$algorithm <- gsub("meas.", "", results$algorithm)
-
 #' combine the measure names and its variant into a single string,
 #' so-called measure ID
 
@@ -69,7 +57,7 @@ results[algo.name == "alg.stepping.ls1", algo.name := "LS1"]
 results[algo.name == "alg.stepping.ls2", algo.name := "LS2"]
 results[algo.name == "alg.stepping.rc", algo.name := "RC"]
 
-#' save and load the result
+#' save and load the result so that it is reusable
 
 save(results, file = paste0(getwd(), "/results_ranked.RData"))
 load(paste0(getwd(), "/results_ranked.RData"))
@@ -103,6 +91,8 @@ res <- as.data.frame(t(apply(res, 2, rank)))
 res$measure <- rownames(res)
 res <- data.table(res)
 
+#### the code to form LaTeX table:
+
 res$diff <- ifelse(grepl("diff", res$measure), "y", "n")
 res$measure <- gsub(".diff", "", res$measure)
 res$measure <- gsub(".orig", "", res$measure)
@@ -127,12 +117,13 @@ res[measure == "rc.w", measure := "RU_w"]
 res[measure == "tvd", measure := "TVD"]
 res$measure <- paste0("$\\mathop{", res$measure, "}$")
 
+
 write.csv(res, paste0(getwd(), "/results/res_meas.csv"), row.names = FALSE)
 
 #' some additional plots
-
-d <- results[algo.name == "BE1",]
-barplot(table(d$algo.rank)/sum(table(d$algo.rank)))
-
-d <- results[algo.name == "NILL",]
-barplot(table(d$algo.rank)/sum(table(d$algo.rank)))
+# 
+# d <- results[algo.name == "BE1",]
+# barplot(table(d$algo.rank)/sum(table(d$algo.rank)))
+# 
+# d <- results[algo.name == "NILL",]
+# barplot(table(d$algo.rank)/sum(table(d$algo.rank)))

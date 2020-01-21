@@ -1,6 +1,6 @@
-# list.of.packages <- c("batchtools")
-# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-# if(length(new.packages)) install.packages(new.packages)
+
+# uncomment the following row to install the "batchtools" R package
+# install.packages("batchtools")
 
 library(batchtools)
 library(bpriv)
@@ -30,16 +30,20 @@ reg = makeExperimentRegistry(file.dir = paste0(getwd(), "/registry"), packages =
 reg$cluster.functions = makeClusterFunctionsSocket()
 saveRegistry()
 
-#### BBLHs ("problems" in bacthtools terminology)
 
-load(paste0(getwd(), "/all_lps.RData"))
+
+######################
+#### BBLHs ("problems" in bacthtools terminology)
+######################
+
+load(paste0(getwd(), "/all_lps.RData")) # load pre-processed load profiles
 
 modifylp <- function(data, job, algo.name, max.be, max.bp, be, mode, ...){
   possible.args <- list(max.be = max.be, max.bp = max.bp, be = be, mode = mode)
   arg.names <- names(as.list(args(algo.name)))
   args.to.use <- possible.args[names(possible.args) %in% arg.names]
 
-  #### check if better load profiles exist
+  #### if there are some errors...
   data$lpo[data$lpo < 0] <- 0
   
   if("voltage" %in% arg.names){
@@ -61,7 +65,11 @@ for(i in 1:length(all.lps)){
   addProblem(name = names(all.lps)[i], data = all.lps[[i]], fun = modifylp)
 }
 
+
+######################
 #### privacy measures ("algorithms" in batchtools terminolohy)
+######################
+
 
 # cluster similarity
 
@@ -110,7 +118,8 @@ kd.orig <- function(data, job, instance, ...) {
   -res
 }
 
-# differenced is commented out since it is only applied as conditional 9and we do not program it)
+# differenced is commented out since it is only applied as conditional K-divergence 
+# (and we do not use it)
 #
 # kd.diff <- function(data, job, instance, ...) {
 #   res <- priv.kd(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
@@ -211,7 +220,10 @@ addAlgorithm(name = "tvd.orig", fun = tvd.orig)
 reg$problems
 reg$algorithms
 
-#### parameters (names of BBLHs to use and storage characteristics - inputs of BBLHs)
+
+######################
+#### parameters (variants of measures, variants of BBLHs to use and storage characteristics - inputs of BBLHs)
+######################
 
 ades = list(
   cs.orig = data.table(),
@@ -261,7 +273,11 @@ addExperiments(pdes, ades, repls = 1)
 summarizeExperiments()
 unwrap(getJobPars())
 
+
+
+######################
 #### run experiments
+######################
 
 submitJobs()
 waitForJobs()

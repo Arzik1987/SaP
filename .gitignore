@@ -44,6 +44,10 @@ data/CER/*
 data/ECO/*
 data/REDD/*
 data/Smart/*
+!data/CER/FILES.txt 
+!data/ECO/FILES.txt 
+!data/REDD/FILES.txt 
+!data/Smart/FILES.txt 
 
 # registry, created for the batch experiments
 /registry/
