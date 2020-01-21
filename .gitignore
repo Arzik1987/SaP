@@ -40,14 +40,19 @@ rsconnect/
 ## Experiments-related
 
 # folder with data in the main directory
-/data/
+data/CER/*
+data/ECO/*
+data/REDD/*
+data/Smart/*
 
 # registry, created for the batch experiments
 /registry/
 
 # profiles data
-all_lps.RData
+*.RData
 
-# registry, created for the batch experiments
-/results/
+# csv files with the aggregated results
+results/*
 
+# debug file
+test.R

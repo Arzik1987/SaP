@@ -65,38 +65,38 @@ for(i in 1:length(all.lps)){
 
 # cluster similarity
 
-meas.cs.orig <- function(data, job, instance, ...) {
+cs.orig <- function(data, job, instance, ...) {
   res <- priv.cs(lpo = instance$lpo, lpm = instance$lpm, ...)
   res
 }
 
-meas.cs.diff <- function(data, job, instance, ...) {
+cs.diff <- function(data, job, instance, ...) {
   res <- priv.cs(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
   res
 }
 
 # conditional entropy
 
-meas.ce.orig <- function(data, job, instance, ...) {
+ce.orig <- function(data, job, instance, ...) {
   res <- priv.ce(lpo = instance$lpo, lpm = instance$lpm, ...)
   -res
 }
 
-meas.ce.diff <- function(data, job, instance, ...) {
+ce.diff <- function(data, job, instance, ...) {
   res <- priv.ce(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
   -res
 }
 
 # entropy ratio
 
-meas.er.hist.diff <- function(data, job, instance, ...) {
+er.diff <- function(data, job, instance, ...) {
   res <- priv.er.hist(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
   res
 }
 
 # feature mass
 
-meas.fm.diff <- function(data, job, instance, regime, ...) {
+fm.diff <- function(data, job, instance, regime, ...) {
   thr <- ifelse(regime == "rfm", 0, instance$interval*50/60000) # threshold = 50 Watt for "fm" and "ed" regimes
   res <- priv.fm(lpo = diff(instance$lpo), lpm = diff(instance$lpm), thr = thr,
                  regime = regime, ...) 
@@ -105,71 +105,71 @@ meas.fm.diff <- function(data, job, instance, regime, ...) {
 
 # K-divergence
 
-meas.kd.orig <- function(data, job, instance, ...) {
+kd.orig <- function(data, job, instance, ...) {
   res <- priv.kd(lpo = instance$lpo, lpm = instance$lpm, ...)
   -res
 }
 
 # differenced is commented out since it is only applied as conditional 9and we do not program it)
 #
-# meas.kd.diff <- function(data, job, instance, ...) {
+# kd.diff <- function(data, job, instance, ...) {
 #   res <- priv.kd(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
 #   -res
 # }
 
 # KL divergence
 
-meas.kl.hist.orig <- function(data, job, instance, ...) {
+kl.orig <- function(data, job, instance, ...) {
   res <- priv.kl.hist(lpo = instance$lpo, lpm = instance$lpm, ...)
   -res
 }
 
-meas.kl.hist.diff <- function(data, job, instance, ...) {
+kl.diff <- function(data, job, instance, ...) {
   res <- priv.kl.hist(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
   -res
 }
 
 # Load variance
 
-meas.lv.orig <- function(data, job, instance, ...) {
+lv.orig <- function(data, job, instance, ...) {
   res <- priv.lv(lpo = instance$lpo, lpm = instance$lpm, ...)
   res
 }
 
 # Mutual information
 
-meas.mi.hist.orig <- function(data, job, instance, ...) {
+mi.orig <- function(data, job, instance, ...) {
   res <- priv.mi.hist(lpo = instance$lpo, lpm = instance$lpm, features = instance$features, ...)
   res
 }
 
-meas.mi.hist.diff <- function(data, job, instance, ...) {
+mi.diff <- function(data, job, instance, ...) {
   res <- priv.mi.hist(lpo = diff(instance$lpo), lpm = diff(instance$lpm), features = instance$features, ...)
   res
 }
 
 # Reconstruction
 
-meas.rc.orig <- function(data, job, instance, ...) {
+rc.orig <- function(data, job, instance, ...) {
   res <- priv.rc(lpo = instance$lpo, lpm = instance$lpm, ...)
   res
 }
 
 # coefficient of determination
 
-meas.dc.orig <- function(data, job, instance, ...) {
+dc.orig <- function(data, job, instance, ...) {
   res <- priv.dc(lpo = instance$lpo, lpm = instance$lpm, ...)
   res
 }
 
-meas.dc.diff <- function(data, job, instance, ...) {
+dc.diff <- function(data, job, instance, ...) {
   res <- priv.dc(lpo = diff(instance$lpo), lpm = diff(instance$lpm), ...)
   res
 }
 
 # Total variation distance
 
-meas.tvd.orig <- function(data, job, instance, ...) {
+tvd.orig <- function(data, job, instance, ...) {
   res <- priv.tvd(lpo = instance$lpo, lpm = instance$lpm, ...)
   -res
 }
@@ -177,32 +177,32 @@ meas.tvd.orig <- function(data, job, instance, ...) {
 
 ####
 
-addAlgorithm(name = "meas.cs.orig", fun = meas.cs.orig)
-addAlgorithm(name = "meas.cs.diff", fun = meas.cs.diff)
+addAlgorithm(name = "cs.orig", fun = cs.orig)
+addAlgorithm(name = "cs.diff", fun = cs.diff)
 
-addAlgorithm(name = "meas.ce.orig", fun = meas.ce.orig)
-addAlgorithm(name = "meas.ce.diff", fun = meas.ce.diff)
+addAlgorithm(name = "ce.orig", fun = ce.orig)
+addAlgorithm(name = "ce.diff", fun = ce.diff)
 
-addAlgorithm(name = "meas.er.hist.diff", fun = meas.er.hist.diff)
+addAlgorithm(name = "er.diff", fun = er.diff)
 
-addAlgorithm(name = "meas.fm.diff", fun = meas.fm.diff)
+addAlgorithm(name = "fm.diff", fun = fm.diff)
 
-addAlgorithm(name = "meas.kd.orig", fun = meas.kd.orig)
+addAlgorithm(name = "kd.orig", fun = kd.orig)
 
-addAlgorithm(name = "meas.kl.hist.orig", fun = meas.kl.hist.orig)
-addAlgorithm(name = "meas.kl.hist.diff", fun = meas.kl.hist.diff)
+addAlgorithm(name = "kl.orig", fun = kl.orig)
+addAlgorithm(name = "kl.diff", fun = kl.diff)
 
-addAlgorithm(name = "meas.lv.orig", fun = meas.lv.orig)
+addAlgorithm(name = "lv.orig", fun = lv.orig)
 
-addAlgorithm(name = "meas.mi.hist.orig", fun = meas.mi.hist.orig)
-addAlgorithm(name = "meas.mi.hist.diff", fun = meas.mi.hist.diff)
+addAlgorithm(name = "mi.orig", fun = mi.orig)
+addAlgorithm(name = "mi.diff", fun = mi.diff)
 
-addAlgorithm(name = "meas.rc.orig", fun = meas.rc.orig)
+addAlgorithm(name = "rc.orig", fun = rc.orig)
 
-addAlgorithm(name = "meas.dc.orig", fun = meas.dc.orig)
-addAlgorithm(name = "meas.dc.diff", fun = meas.dc.diff)
+addAlgorithm(name = "dc.orig", fun = dc.orig)
+addAlgorithm(name = "dc.diff", fun = dc.diff)
 
-addAlgorithm(name = "meas.tvd.orig", fun = meas.tvd.orig)
+addAlgorithm(name = "tvd.orig", fun = tvd.orig)
 
 
 
@@ -214,22 +214,22 @@ reg$algorithms
 #### parameters (names of BBLHs to use and storage characteristics - inputs of BBLHs)
 
 ades = list(
-  meas.cs.orig = data.table(),
-  meas.cs.diff = data.table(),
-  meas.ce.orig = data.table(),
-  meas.ce.diff = data.table(),
-  meas.er.hist.diff = data.table(regime = c("zeros", "nozeros")),
-  meas.fm.diff = data.table(regime = c("fm", "rfm", "ed")),
-  meas.kd.orig = data.table(),
-  meas.kl.hist.orig = data.table(),
-  meas.kl.hist.diff = data.table(),
-  meas.lv.orig = data.table(),
-  meas.mi.hist.orig = data.table(regime = c("iid", "ms", "mns", "bin")),
-  meas.mi.hist.diff = data.table(regime = c("iid", "ms", "bin")),
-  meas.rc.orig = data.table(regime = c("v", "w")),
-  meas.dc.orig = data.table(regime = c("reg", "lpo")),
-  meas.dc.diff = data.table(regime = c("reg")),
-  meas.tvd.orig = data.table()
+  cs.orig = data.table(),
+  cs.diff = data.table(),
+  ce.orig = data.table(),
+  ce.diff = data.table(),
+  er.diff = data.table(regime = c("zeros", "nozeros")),
+  fm.diff = data.table(regime = c("fm", "rfm", "ed")),
+  kd.orig = data.table(),
+  kl.orig = data.table(),
+  kl.diff = data.table(),
+  lv.orig = data.table(),
+  mi.orig = data.table(regime = c("iid", "ms", "mns")),
+  mi.diff = data.table(regime = c("iid", "ms", "bin")),
+  rc.orig = data.table(regime = c("v", "w")),
+  dc.orig = data.table(regime = c("reg", "lpo")),
+  dc.diff = data.table(regime = c("reg")),
+  tvd.orig = data.table()
 )
 
 

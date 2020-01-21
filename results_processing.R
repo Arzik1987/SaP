@@ -9,7 +9,7 @@ reg <- loadRegistry(file.dir = paste0(getwd(), "/registry"), work.dir = getwd(),
 #' specifying which of the four batteries was used in the experiment.
 #' save the resulting table.
 
-reduce <- function(res) res
+reduce <- function(res) round(res, 10)
 results = unwrap(reduceResultsDataTable(fun = reduce))
 pars = unwrap(getJobPars())
 results = ijoin(pars, results)
@@ -28,8 +28,8 @@ load(paste0(getwd(), "/results.RData"))
 #' delete unnecessary information from measure's names
 
 # results[algorithm == "cs.diff" & result.1 == -1, result.1 := 0]
-results$algorithm <- gsub(".hist", "", results$algorithm)
-results$algorithm <- gsub("meas.", "", results$algorithm)
+# results$algorithm <- gsub(".hist", "", results$algorithm)
+# results$algorithm <- gsub("meas.", "", results$algorithm)
 
 #' combine the measure names and its variant into a single string,
 #' so-called measure ID
@@ -111,7 +111,7 @@ res[measure == "cs", measure := "CS"]
 res[measure == "dc.reg", measure := "R^2_2"]
 res[measure == "dc.lpo", measure := "R^2_p"]
 res[measure == "er.nozeros", measure := "ER_{nz}"]
-res[measure == "er.zeros", measure := "Cs"]
+res[measure == "er.zeros", measure := "ER_{z}"]
 res[measure == "fm.ed", measure := "FM_{ed}"]
 res[measure == "fm.fm", measure := "FM"]
 res[measure == "fm.rfm", measure := "FM_r"]
