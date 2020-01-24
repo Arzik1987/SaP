@@ -1,9 +1,20 @@
+
+# check whether the needed packages are installed. Install if something is missing
+
+list.of.packages <- c("reshape")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+
 #### results processing
 
 library(batchtools)
 library(reshape)
 
 reg <- loadRegistry(file.dir = paste0(getwd(), "/registry"), work.dir = getwd(), writeable = TRUE)
+
+# create a directory for results
+
+dir.create("results", showWarnings = FALSE)
 
 #' make a flat table with the results. Add a column "battery"
 #' specifying which of the four batteries was used in the experiment.
@@ -59,8 +70,8 @@ results[algo.name == "alg.stepping.rc", algo.name := "RC"]
 
 #' save and load the result so that it is reusable
 
-save(results, file = paste0(getwd(), "/results_ranked.RData"))
-load(paste0(getwd(), "/results_ranked.RData"))
+save(results, file = paste0(getwd(), "/results/results_ranked.RData"))
+load(paste0(getwd(), "/results/results_ranked.RData"))
 
 #' average ranks of the BBLHs
 

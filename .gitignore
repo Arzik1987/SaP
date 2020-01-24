@@ -12,6 +12,7 @@
 
 # Output files from R CMD build
 /*.tar.gz
+!bpriv_0.0.1.tar.gz 
 
 # Output files from R CMD check
 /*.Rcheck/
@@ -60,3 +61,4 @@ results/*
 
 # debug file
 test.R
+.Rproj.user

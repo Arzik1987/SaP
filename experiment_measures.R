@@ -1,11 +1,18 @@
 
-# uncomment the following row to install the "batchtools" R package
-# install.packages("batchtools")
+# check whether the needed packages are installed. Install if something is missing
+
+list.of.packages <- c("batchtools", "devtools", "purrr", "infotheo", "cluster", "entropy", "FNN", "wavelets")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+
+if(!("bpriv" %in% installed.packages()[,"Package"])){
+  install.packages("bpriv_0.0.1.tar.gz", repos = NULL, type = "source")
+}
 
 library(batchtools)
+library(data.table)
 library(bpriv)
 
-setwd("C:\\Projects\\4 Storage and Privacy\\Experiments_gitHub")
 
 #### if you did something wrong and want to redo everything from scratch
 
