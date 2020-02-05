@@ -1,1 +1,3 @@
+http://traces.cs.umass.edu/index.php/Smart/Smart
+(UMass Smart* Dataset - 2013 release)
 homeB-power.tar.gz
