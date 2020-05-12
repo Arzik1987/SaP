@@ -1,6 +1,8 @@
 
 ## Code for the experiments comparing Battery-Based Load Hiding Algorithms
 
+The code uses a fixed version of the R package "bpriv" (https://github.com/Arzik1987/bpriv), implementing smart meter privacy measures and several BBLH algorithms. This is done for reproducibility.
+
 ### About
 This repository contains the code to reproduce our experiments. The main components are
 * `bpriv_0.0.1.tar.gz` - the package containing the implementation of privacy measures and BBLH algorithms;
