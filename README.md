@@ -1,7 +1,7 @@
 
 ## Code for the experiments comparing Battery-Based Load Hiding Algorithms
 
-The code uses a fixed version of the R package "bpriv" (https://github.com/Arzik1987/bpriv), implementing smart meter privacy measures and several BBLH algorithms. This is done for reproducibility.
+The code uses a fixed version of the R package [bpriv](https://github.com/Arzik1987/bpriv), implementing smart meter privacy measures and several BBLH algorithms. This is done for reproducibility.
 
 ### About
 This repository contains the code to reproduce our experiments. The main components are
@@ -27,7 +27,7 @@ This repository contains the code to reproduce our experiments. The main compone
    * *Source_sample_rate_seconds* - information field. Sample rate in the original dataset.
    
 ### Requirements
-The experiments are implemented in programming language R (https://cran.r-project.org/). We used additional packages listed below. In case your R installation does not contain these packages, the code from this repository will install their latest versions automatically.
+The experiments are implemented in programming language [R](https://cran.r-project.org/). We used additional packages listed below. In case your R installation does not contain these packages, the code from this repository will install their latest versions automatically.
 * anytime (version 0.3.7)
 * batchtools (version 0.9.12)
 * cluster (version 2.1.0)
@@ -45,7 +45,7 @@ The experiments are implemented in programming language R (https://cran.r-projec
 In our experiments, we use the commonly used datasets which we do not own. That is why we request you to download those datasets from their source and put them in the subfolders of the folder `data`. Each of subfolders contains the file `FILES.txt` specifying the link to the source in the first row and containing the list of files to be put in the respective subfolder.
 
 ### How to execute the code
-We suggest to use RStudio (https://www.rstudio.com/). Any of the above packages can be installed manually with the command install.packages("<package-name>")
+We suggest to use [RStudio](https://www.rstudio.com/). Any of the above packages can be installed manually with the command install.packages("<package-name>")
 To install our package (`bpriv_0.0.1.tar.gz`), execute `install.packages("<path-to-the-file>", repos = NULL, type = "source")`.
 To repeat our experiments:
 * open the file `experiments.Rproj`;
